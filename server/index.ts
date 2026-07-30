@@ -224,8 +224,8 @@ app.put('/api/me', wrap(async (req, res) => {
 app.delete('/api/me', wrap(async (req, res) => {
   const user = await requireAuth(req, res);
   if (!user) return;
-  if (String(req.body?.confirm ?? '') !== user.email) {
-    return res.status(400).json({ error: 'Type your email address to confirm deletion' });
+  if (String(req.body?.confirm ?? '') !== 'DELETE') {
+    return res.status(400).json({ error: 'Type DELETE to confirm deletion' });
   }
   await cancelSubscriptionIfAny(user);
   await query(`DELETE FROM users WHERE id = $1`, [user.id]); // sessions/books/resets cascade

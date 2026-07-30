@@ -309,8 +309,39 @@ select:focus {
   color: var(--muted);
 }
 
-.settings-danger input {
-  margin: 8px 0;
+.danger-sep {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--danger);
+}
+
+.danger-sep::before,
+.danger-sep::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 122, 107, 0.3);
+}
+
+.settings-group-danger {
+  border-color: rgba(255, 122, 107, 0.35);
+}
+
+.modal-text {
+  margin: 0 0 14px;
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.modal-text strong {
+  color: var(--danger);
 }
 
 /* auth */

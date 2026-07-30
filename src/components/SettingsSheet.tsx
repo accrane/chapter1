@@ -16,8 +16,8 @@ export function SettingsSheet({
   onGenresChanged: () => void;
 }) {
   const [error, setError] = useState('');
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [confirmEmail, setConfirmEmail] = useState('');
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteText, setDeleteText] = useState('');
   const [newGenre, setNewGenre] = useState('');
   const billing = user.billing;
 
@@ -71,7 +71,7 @@ export function SettingsSheet({
   const deleteAccount = async () => {
     setError('');
     try {
-      await api.deleteAccount(confirmEmail);
+      await api.deleteAccount(deleteText.trim());
       onSignedOut();
     } catch (err: any) {
       setError(err.message);
@@ -152,32 +152,51 @@ export function SettingsSheet({
           >
             Sign out
           </button>
-          {confirmDelete ? (
-            <div className="settings-danger">
-              <p>
+        </div>
+
+        <div className="danger-sep" role="separator">Danger Zone</div>
+
+        <div className="settings-group settings-group-danger">
+          <button className="settings-item danger" onClick={() => setDeleteOpen(true)}>
+            Delete account…
+          </button>
+        </div>
+
+        {deleteOpen && (
+          <div className="modal-overlay" onClick={() => setDeleteOpen(false)}>
+            <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <h3 className="modal-title">Delete account</h3>
+              <p className="modal-text">
                 This permanently deletes your account, your books, and cancels any subscription.
-                Type <strong>{user.email}</strong> to confirm.
+                There is no undo. Type <strong>DELETE</strong> to confirm.
               </p>
               <input
-                value={confirmEmail}
-                onChange={(e) => setConfirmEmail(e.target.value)}
-                placeholder={user.email}
+                value={deleteText}
+                onChange={(e) => setDeleteText(e.target.value)}
+                placeholder="DELETE"
+                autoFocus
               />
               <div className="sheet-actions">
-                <button className="linkish" onClick={() => setConfirmDelete(false)}>
+                <button
+                  className="linkish"
+                  onClick={() => {
+                    setDeleteOpen(false);
+                    setDeleteText('');
+                  }}
+                >
                   Keep my account
                 </button>
-                <button className="danger" disabled={confirmEmail !== user.email} onClick={deleteAccount}>
+                <button
+                  className="danger"
+                  disabled={deleteText.trim() !== 'DELETE'}
+                  onClick={deleteAccount}
+                >
                   Delete forever
                 </button>
               </div>
             </div>
-          ) : (
-            <button className="settings-item danger" onClick={() => setConfirmDelete(true)}>
-              Delete account…
-            </button>
-          )}
-        </div>
+          </div>
+        )}
 
         {error && <p className="error">{error}</p>}
 
