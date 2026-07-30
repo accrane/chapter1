@@ -1,5 +1,6 @@
 import express from 'express';
 import crypto from 'node:crypto';
+import { waitUntil } from '@vercel/functions';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { query, seedDefaultGenres } from './db.js';
@@ -157,28 +158,34 @@ app.get('/api/auth/me', wrap(async (req, res) => {
   res.json({ user: user ? publicUser(user) : null });
 }));
 
+// On Vercel the function freezes as soon as the response is sent, so work
+// that continues past res.json() must be registered with waitUntil.
+function afterResponse(work: Promise<void>) {
+  const guarded = work.catch((err) => console.error('background work failed:', err));
+  if (process.env.VERCEL) waitUntil(guarded);
+}
+
 app.post('/api/auth/forgot', rateLimit('forgot', 5, 60 * 60_000), wrap(async (req, res) => {
   const email = String(req.body?.email ?? '').trim();
-  // Always answer ok so the endpoint can't be used to probe for accounts.
+  // Always answer ok (and do the real work afterwards) so response timing
+  // can't be used to probe for accounts.
   res.json({ ok: true });
-  const { rows } = await query<User>(`SELECT * FROM users WHERE lower(email) = lower($1)`, [email]);
-  const user = rows[0];
-  if (!user) return;
-  const token = crypto.randomBytes(32).toString('hex');
-  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-  await query(
-    `INSERT INTO password_resets (token_hash, user_id, expires_at) VALUES ($1, $2, now() + interval '1 hour')`,
-    [tokenHash, user.id]
-  );
-  try {
+  afterResponse((async () => {
+    const { rows } = await query<User>(`SELECT * FROM users WHERE lower(email) = lower($1)`, [email]);
+    const user = rows[0];
+    if (!user) return;
+    const token = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    await query(
+      `INSERT INTO password_resets (token_hash, user_id, expires_at) VALUES ($1, $2, now() + interval '1 hour')`,
+      [tokenHash, user.id]
+    );
     await sendEmail(
       user.email,
       'Reset your Chapter1 password',
       `Hi ${user.name},\n\nSomeone (hopefully you) asked to reset your Chapter1 password. This link works for one hour:\n\n${APP_URL}/reset?token=${token}\n\nIf you didn't ask for this, ignore this email.`
     );
-  } catch (err) {
-    console.error('failed to send reset email:', err);
-  }
+  })());
 }));
 
 app.post('/api/auth/reset', rateLimit('reset', 10, 60 * 60_000), wrap(async (req, res) => {

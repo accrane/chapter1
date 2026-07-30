@@ -12,6 +12,7 @@
     "db:migrate": "tsx scripts/migrate.ts"
   },
   "dependencies": {
+    "@vercel/functions": "^3.7.6",
     "@zxing/browser": "^0.1.5",
     "@zxing/library": "^0.21.3",
     "express": "^4.21.2",
